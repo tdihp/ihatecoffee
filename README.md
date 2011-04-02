@@ -7,3 +7,4 @@ WebGL Boilerplate is the fastest way to start developing a WebGL project. Levera
 
 
 (Pretty much all the hard work done by [mrdoob](http://mrdoob.com/lab/javascript/webgl/glsl/02/).)
+(Thx [ajpiano](https://github.com/ajpiano/boilerplate-boilerplate) for the help getting this plate boiled.)
