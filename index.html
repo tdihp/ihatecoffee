@@ -1,34 +1,24 @@
 <!DOCTYPE HTML> 
-<html lang="en"> 
+<html> 
 	<head> 
-		<title>WebGL/GLSL Sandbox - Test 02</title> 
 		<meta charset="utf-8"> 
-		<style type="text/css"> 
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>WebGL Boilerplate</title> 
+		
+		<style> 
 			body {
 				background-color: #000000;
 				margin: 0px;
 				overflow: hidden;
 			}
- 
-			#info {
-				position: absolute;
-				top: 0px;
- 
-				color: #ffffff;
-				font-family: Monospace;
-				font-size: 14px;
-				font-weight: bold;
-				text-shadow: rgba( 0, 0, 0, 0.75 ) 0px 1px 2px;
-			}
- 
 		</style> 
 	</head> 
 	<body> 
  
-		<div id="effect"></div> 
+		<canvas></canvas>
 		<div id="info"></div> 
  
-		<script id="vs" type="x-shader/x-vertex"> 
+		<script id="vs" type="x-shader/vertex"> 
  
 			attribute vec3 position;
  
@@ -40,7 +30,7 @@
  
 		</script> 
  
-		<script id="fs" type="x-shader/x-fragment"> 
+		<script id="fs" type="x-shader/fragment"> 
  
 			uniform float time;
 			uniform vec2 resolution;
@@ -57,52 +47,48 @@
  
 		</script> 
  
-		<script type="text/javascript"> 
+		<script> 
  
 			/**
 			 * Provides requestAnimationFrame in a cross browser way.
-			 * http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+			 * paulirish.com/2011/requestanimationframe-for-smart-animating/
 			 */
+			window.requestAnimationFrame = window.requestAnimationFrame || ( function() {
+
+				return  window.webkitRequestAnimationFrame ||
+				        window.mozRequestAnimationFrame ||
+				        window.oRequestAnimationFrame ||
+				        window.msRequestAnimationFrame ||
+				        function(  callback, element ) {
+					        window.setTimeout( callback, 1000 / 60 );
+				        };
+
+			})();
+
  
-			if ( !window.requestAnimationFrame ) {
- 
-				window.requestAnimationFrame = ( function() {
- 
-					return window.webkitRequestAnimationFrame ||
-					window.mozRequestAnimationFrame ||
-					window.oRequestAnimationFrame ||
-					window.msRequestAnimationFrame ||
-					function( /* function FrameRequestCallback */ callback, /* DOMElement Element */ element ) {
- 
-						window.setTimeout( callback, 1000 / 60 );
- 
-					};
- 
-				} )();
- 
-			}
- 
-		</script> 
- 
-		<script type="text/javascript"> 
- 
-			var effectDiv, sourceDiv, canvas, gl, buffer, vertex_shader, fragment_shader, currentProgram,
-			vertex_position, parameters = { start_time: new Date().getTime(), time: 0, screenWidth: 0, screenHeight: 0 };
+			var canvas, 
+			    gl, 
+			    buffer, 
+			    vertex_shader, fragment_shader, 
+			    currentProgram,
+			    vertex_position, 
+			    parameters = {  start_time  : new Date().getTime(), 
+			                    time        : 0, 
+			                    screenWidth : 0, 
+			                    screenHeight: 0 };
  
 			init();
 			animate();
  
 			function init() {
  
-				vertex_shader = document.getElementById( 'vs' ).textContent;
-				fragment_shader = document.getElementById( 'fs' ).textContent;
+				vertex_shader = document.getElementById('vs').textContent;
+				fragment_shader = document.getElementById('fs').textContent;
  
-				effectDiv = document.getElementById( 'effect' );
-				sourceDiv = document.getElementById( 'info' );
-				sourceDiv.innerHTML = fragment_shader.replace(/\n/gi, "<br />").replace(/\t\t/gi, "&nbsp;&nbsp;&nbsp;&nbsp;");
+
  
-				canvas = document.createElement( 'canvas' );
-				effectDiv.appendChild( canvas );
+				canvas = document.querySelector( 'canvas' );
+
  
 				// Initialise WebGL
  
@@ -114,7 +100,6 @@
  
 				if ( !gl ) {
  
-					alert("WebGL not supported");
 					throw "cannot create webgl context";
  
 				}
