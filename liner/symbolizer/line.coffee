@@ -18,10 +18,10 @@ class LineSymbolizer extends Symbolizer
         vertexShader = """
         #define STYLE_SIZE #{@styleSize}
         #define DIRECTION_RAD #{PI_X_2 / @directionLimit}
-        #define INTENSITY_MULTIPLY #{(@maxIntensity - 1.0) + 'f'}
+        #define INTENSITY_MULTIPLY float(#{(@maxIntensity - 1.0)})
         #{fs.readFileSync(__dirname + '/shaders/line.vertex.glsl', 'utf8')}
         """
-
+        #vertexShader = fs.readFileSync(__dirname + '/shaders/line.vertex.glsl', 'utf8')
         fragmentShader = fs.readFileSync(__dirname + '/shaders/line.fragment.glsl', 'utf8')
         program = initProgram(gl, vertexShader, fragmentShader)
         @program = program
@@ -39,17 +39,10 @@ class LineSymbolizer extends Symbolizer
         # various configurations before draw
         super()
         # setup program
+        gl = @gl
         gl.useProgram(@program)
-        gl.enableVertexAttribArray(@a_position)
-        gl.enableVertexAttribArray(@a_direction)
-        gl.enableVertexAttribArray(@a_stroke)
-        gl.enableVertexAttribArray(@a_intensity)
-        # the layout of the buffer is always assumed so.
-        gl.vertexAttribPointer(@a_position, 2, gl.UNSIGNED_SHORT, false, 8, 0)
-        gl.vertexAttribPointer(@a_direction, 1, gl.UNSIGNED_SHORT, false, 8, 4)
-        gl.vertexAttribPointer(@a_stroke, 1, gl.UNSIGNED_BYTE, false, 8, 6)
-        gl.vertexAttribPointer(@a_intensity, 1, gl.UNSIGNED_BYTE, false, 8, 7)
-
+        #gl.disable(gl.BLEND)
+        gl.disable(gl.DEPTH_TEST)
         # set resolution from context
         {width, height} = context.resolution
         gl.uniform2f(@u_resolution, width, height)
@@ -59,12 +52,19 @@ class LineSymbolizer extends Symbolizer
 
     doDraw: (bucket) ->
         gl = @gl
+        
+        gl.clearColor(0.8, 0.8, 0.8, 1)
+        gl.clearDepth(1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+        
         bucket.bindIt()
+        #console.log "LineSymbolizer drawing #{bucket.size()}"
+
         gl.drawElements(gl.TRIANGLE_STRIP, bucket.size(), gl.UNSIGNED_SHORT, 0)
 
     newBucket: () ->
         # create new data bucket(stitcher) to be fed
-        throw 'not implemented!'
+        return new LineBucket(@)
 
     newStyle: (styleConfig={}) ->
         # if config not given, return a default style for peace
@@ -74,6 +74,7 @@ class LineSymbolizer extends Symbolizer
         flatPalette = []
         for c in palette
             flatPalette = flatPalette.concat c
+        #console.log("update style to palette: #{palette}, widths: #{widths}")
         gl.uniform4fv(@u_palette, flatPalette)
         gl.uniform1fv(@u_widths, widths)
 
@@ -87,11 +88,12 @@ class LineStyle
             @widths = (1 for i in [0...styleSize])
 
     bindIt: () ->
-        @symbolizer._setStyle(palette, widths)
+        @symbolizer._setStyle(@palette, @widths)
 
 
 class LineBucket
-    constructor: (@symbolizer, @dirty=true) ->
+    constructor: (@symbolizer) ->
+        @dirty=true
         @stitcher = new LinerStitch(@symbolizer.edges,
                                     @symbolizer.maxIntensity,
                                     @symbolizer.directionLimit
@@ -101,15 +103,18 @@ class LineBucket
 
     feed: (symbol) ->
         @dirty=true
+        console.log "LineBucket feeding #{[symbol.line, symbol.stroke, symbol.lineCap, symbol.lineJoin]}"
         return @stitcher.addLine(symbol.line, symbol.stroke, symbol.lineCap, symbol.lineJoin)
 
     # XXX: use bindIt for prestore data
     bindIt: () ->
+        gl = @symbolizer.gl
         if @dirty
             @freeze()
         else
             gl.bindBuffer(gl.ARRAY_BUFFER, @arrayBuffer)
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, @elementArrayBuffer)
+        @setVertexAttribLayout()
 
     freeze: () ->
         # store into gl
@@ -117,9 +122,23 @@ class LineBucket
         gl.bindBuffer(gl.ARRAY_BUFFER, @arrayBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, @stitcher.pointBuffer.buffer, gl.STATIC_DRAW)
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, @elementArrayBuffer)
+        console.log "freezing elements #{@stitcher.elements}"
         element_array = new Uint16Array(@stitcher.elements)
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, element_array, gl.STATIC_DRAW)
         @dirty = false
+
+    setVertexAttribLayout: () ->
+        # the layout of the buffer is always assumed so.
+        gl = @symbolizer.gl
+        {a_position, a_direction, a_stroke, a_intensity} = @symbolizer
+        gl.enableVertexAttribArray(a_position)
+        gl.enableVertexAttribArray(a_direction)
+        gl.enableVertexAttribArray(a_stroke)
+        gl.enableVertexAttribArray(a_intensity)
+        gl.vertexAttribPointer(a_position, 2, gl.UNSIGNED_SHORT, false, 8, 0)
+        gl.vertexAttribPointer(a_direction, 1, gl.UNSIGNED_SHORT, false, 8, 4)
+        gl.vertexAttribPointer(a_stroke, 1, gl.UNSIGNED_BYTE, false, 8, 6)
+        gl.vertexAttribPointer(a_intensity, 1, gl.UNSIGNED_BYTE, false, 8, 7)
 
     size: () ->
         return @stitcher.elements.length
@@ -189,7 +208,7 @@ class LinerStitch
         dv.setUint8(6, stroke)
         dv.setUint8(7, Math.floor((intensity - 1) * 255 / (@maxIntensity - 1)))
         @pointBuffer.incr()
-        #console.log("packed: #{x}, #{y}, #{Math.floor(direction * 65536 / PI_X_2)}, #{stroke}, #{Math.floor((intensity - 1) * 255 / (@maxIntensity - 1))}")
+        console.log("packed: #{x}, #{y}, #{Math.floor(direction * @directionLimit / PI_X_2)}, #{stroke}, #{Math.floor((intensity - 1) * 255 / (@maxIntensity - 1))}")
 
     addLine: (line, stroke, lineCap='butt', lineJoin='miter') ->
         if line.length < 2

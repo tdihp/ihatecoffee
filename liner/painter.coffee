@@ -29,19 +29,20 @@ class Painter
             NOTE: we STRICTLY preserve draw order, and it's painter's job to
             do so
         ###
+        console.log "feeding symbol #{JSON.stringify symbol}"
         symbolizerName = symbol.type or 'line'
         styleName = symbol.style or 'default'
         symbolizer = @symbolizers[symbolizerName]
 
         if symbolizerName != @currentSymbolizer or styleName != @currentStyle
             slotID = symbolizer.newSlot()
-            @drawSequence.push({styleName: styleName, symbolizerName: symbolizerName, slotID: slotID})
+            @drawSequence.push({styleName: styleName, symbolizerName, slotID})
             @currentSymbolizer = symbolizerName
             @currentStyle = styleName
         else
             slotID = @drawSequence[@drawSequence.length - 1].slotID
 
-        symbolizer.feed(slotID, symbolizer)
+        symbolizer.feed(slotID, symbol)
 
     flush: () ->
         ###
@@ -58,8 +59,9 @@ class Painter
             if config.symbolizerName != symbolizerName
                 if symbolizerName
                     @symbolizers[symbolizerName].exit()
-                    symbolizerName = config.symbolizerName
-                    @symbolizers[symbolizerName].enter(context)
+                symbolizerName = config.symbolizerName
+                @symbolizers[symbolizerName].enter(context)
+
             @symbolizers[symbolizerName].draw(config.slotID, config.styleName)
 
         if symbolizerName

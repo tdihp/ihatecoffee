@@ -28,12 +28,14 @@ class Symbolizer
 
     draw: (slotID, styleName) ->
         # assume buffer already bound, uniforms already configured
-        if not @currentStyleName == styleName
+        if not (@currentStyleName == styleName)
             @styles[styleName].bindIt()
             @currentStyleName = styleName
 
         for bucket in @slots[slotID]
-            doDraw(bucket)
+            @doDraw(bucket)
+
+        return
 
     doDraw: (bucket) ->
         throw 'not implemented!'

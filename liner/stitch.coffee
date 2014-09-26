@@ -155,12 +155,13 @@ class JoinStitchBevel extends JoinStitchFanHelper
         return [beginAngle, endAngle]
 
 
-module.exports =
-    CapStitch: CapStitch
-    JoinStitch: JoinStitch
-    CapStitchRound: CapStitchRound
-    CapStitchButt: CapStitchButt
-    CapStitchSquare: CapStitchSquare
-    JoinStitchMiter: JoinStitchMiter
-    JoinStitchRound: JoinStitchRound
-    JoinStitchBevel: JoinStitchBevel
+module.exports = {
+    CapStitch,
+    JoinStitch,
+    CapStitchRound,
+    CapStitchButt,
+    CapStitchSquare,
+    JoinStitchMiter,
+    JoinStitchRound,
+    JoinStitchBevel,
+}

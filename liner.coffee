@@ -3,6 +3,7 @@ window.liner = {
 }
 
 Painter = require './liner/painter'
+{rgb2f, darken} = require './liner/util'
 
 
 liner.createPainter = (gl) ->
@@ -14,19 +15,19 @@ liner.createPainter = (gl) ->
     palette[0] = rgb2f(248, 242, 218)
     widths[0] = 5
 
-    palette[1] = darken(painter.palette[0], 0.6)
+    palette[1] = darken(palette[0], 0.6)
     widths[1] = 6
 
     palette[2] = rgb2f(199, 175, 189)
     widths[2] = 4.5
 
-    palette[3] = darken(painter.palette[2], 0.6)
+    palette[3] = darken(palette[2], 0.6)
     widths[3] = 5.5
 
     palette[4] = rgb2f(221, 236, 239)
     widths[4] = 3
 
-    palette[5] = darken(painter.palette[4], 0.6)
+    palette[5] = darken(palette[4], 0.6)
     widths[5] = 4
 
     palette[6] = rgb2f(72, 68, 82)
@@ -41,7 +42,7 @@ liner.createPainter = (gl) ->
 
     points = [[100, 100], [300, 100], [250, 300], [400, 300], [600, 200], [700, 250]]
     
-    painter.feed({type: 'line', line: points})
+    #painter.feed({type: 'line', line: points, stroke: 7})
     #painter.addLine(points, 2)
     #painter.addLine(points, 0, 'butt', 'bevel')
     #painter.addLine(points, 0, 'square', 'miter')
@@ -54,8 +55,8 @@ liner.createPainter = (gl) ->
 
 liner.addLines = (painter, lines)->
     for line in lines
-        style = line.style
-        painter.addLine(line.coords, style.stroke, style.endStyle, style.joinStyle)
+        #style = line.style
+        painter.feed(line)
     #points = [[100, 100], [300, 100], [250, 300], [400, 300], [600, 200], [700, 250]]
     #points = [[100, 100], [300, 100]]
     #painter.addLine(points, 7)
@@ -64,4 +65,4 @@ liner.addLines = (painter, lines)->
     #painter.addLine(points, 7, 'square', 'bevel')
     #painter.addLine(points, 7, 'round', 'round')
 
-    painter.updateBuffer()
+    #painter.updateBuffer()
