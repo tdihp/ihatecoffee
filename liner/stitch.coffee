@@ -1,5 +1,5 @@
 util = require './util'
-{pacman, angleDiff} = util
+{pacman, angleDiff, p2pAngle} = util
 
 
 class CapStitch
@@ -155,6 +155,77 @@ class JoinStitchBevel extends JoinStitchFanHelper
         return [beginAngle, endAngle]
 
 
+class Stitcher
+    ### the base class of stitcher, that does most common things
+    join diagram:
+        -> dir0   s0
+    p0 o--------+ p1
+             s1 |
+       2theta   | | dir1
+                |\/
+                |
+                o p2
+
+    requirements:
+        capStitches
+        joinStitches
+    returns:
+        {vertices, elements}
+    each vertex will have: {dir, side, intensity=1, i, **kw}
+    ###
+    stitchLine: (line, lineCap, lineJoin) ->
+        # the line here consists extra info
+        if line.length < 2
+            console.log "line \"#{line}\" is not a valid line! skipped"
+            return null
+
+        results = []
+
+        [dir0, result] = @_open(lineCap, line[0], line[1])
+        results.push(result)
+        for i in [1...line.length-1]
+            [dir0, result] = @_join(lineJoin, dir0, line[i], line[i + 1])
+            results.push(result)
+        result = @_close(lineCap, dir0)
+        results.push(result)
+
+        vertices = []
+        elements = []
+
+        inLineOffset = 0
+        for result, i in results
+            line1 = result.line1
+            for index0, j in result.line0
+                index1 = line1[j]
+                elements.push(index0 + inLineOffset)
+                elements.push(index1 + inLineOffset)
+            inLineOffset += result.points.length
+
+            for pointInfo in result.points
+                p = line[i]
+                pointInfo.i = i
+                for k, v of p
+                    pointInfo[k] = v
+                vertices.push pointInfo
+
+        return {vertices, elements}
+
+    _open: (lineCap, p0, p1) ->
+        # return dir0, result
+        dir0 = p2pAngle(p0, p1)
+        return [dir0, @capStitches[lineCap].open(dir0)]
+
+    _close: (lineCap, dir0, p1) ->
+        # return result
+        return @capStitches[lineCap].close(dir0)
+
+    _join: (lineJoin, dir0, p1, p2) ->
+        # return dir1, result
+        dir1 = p2pAngle(p1, p2)
+        return [dir1, @joinStitches[lineJoin].join(dir0, dir1)]
+
+
+
 module.exports = {
     CapStitch,
     JoinStitch,
@@ -164,4 +235,5 @@ module.exports = {
     JoinStitchMiter,
     JoinStitchRound,
     JoinStitchBevel,
+    Stitcher,
 }

@@ -1,7 +1,9 @@
 Symbolizer = require './base'
 
 util = require '../util'
-{CapStitchRound, CapStitchButt, CapStitchSquare, JoinStitchMiter, JoinStitchRound, JoinStitchBevel} = require '../stitch'
+{CapStitchRound, CapStitchButt, CapStitchSquare,
+ JoinStitchMiter, JoinStitchRound, JoinStitchBevel,
+ Stitcher} = require '../stitch'
 {PI_X_2, p2pAngle, vecAngle, normRadian, EasyBuffer, initProgram} = util
 
 fs = require 'fs'
@@ -103,7 +105,7 @@ class LineBucket
 
     feed: (symbol) ->
         @dirty=true
-        console.log "LineBucket feeding #{[symbol.line, symbol.stroke, symbol.lineCap, symbol.lineJoin]}"
+        #console.log "LineBucket feeding #{[symbol.line, symbol.stroke, symbol.lineCap, symbol.lineJoin]}"
         return @stitcher.addLine(symbol.line, symbol.stroke, symbol.lineCap, symbol.lineJoin)
 
     # XXX: use bindIt for prestore data
@@ -122,7 +124,7 @@ class LineBucket
         gl.bindBuffer(gl.ARRAY_BUFFER, @arrayBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, @stitcher.pointBuffer.buffer, gl.STATIC_DRAW)
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, @elementArrayBuffer)
-        console.log "freezing elements #{@stitcher.elements}"
+        #console.log "freezing elements #{@stitcher.elements}"
         element_array = new Uint16Array(@stitcher.elements)
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, element_array, gl.STATIC_DRAW)
         @dirty = false
@@ -138,24 +140,13 @@ class LineBucket
         gl.vertexAttribPointer(a_position, 2, gl.UNSIGNED_SHORT, false, 8, 0)
         gl.vertexAttribPointer(a_direction, 1, gl.UNSIGNED_SHORT, false, 8, 4)
         gl.vertexAttribPointer(a_stroke, 1, gl.UNSIGNED_BYTE, false, 8, 6)
-        gl.vertexAttribPointer(a_intensity, 1, gl.UNSIGNED_BYTE, false, 8, 7)
+        gl.vertexAttribPointer(a_intensity, 1, gl.UNSIGNED_BYTE, true, 8, 7)
 
     size: () ->
         return @stitcher.elements.length
 
 
-class LinerStitch
-    ###
-    join diagram:
-        -> dir0   s0
-    p0 o--------+ p1
-             s1 |
-       2theta   | | dir1
-                |\/
-                |
-                o p2
-    ###
-
+class LinerStitch extends Stitcher
     constructor: (@edges, @maxIntensity, @directionLimit)->
         @pointBuffer = new EasyBuffer(8)
         @elements = []
@@ -171,29 +162,16 @@ class LinerStitch
     packVertex: (x, y, pointInfo, stroke) ->
         # return id of the vertex
         ### About packing
-        Planned:
-            point array: x y direction intensity side bend stroke   (8 bytes)
-                         H H H         B         B:1  B:1  B:6
-
-            HH  x, y      -- the old fashioned location
-            H   direction -- the way this point will shift
-            B   intensity -- how hard the point will shift, also used to make linesofar
-            B:1 side      -- start-left or start-right
-            B:1 bend      -- inner or outer, for dash to work properly
-        Actual:
             HH  x, y      -- the old fashioned location
             H   direction -- the way this point will shift
             B   stroke    -- direct to an uniform array
             B   intensity -- how hard the point will shift
 
             elements:
-                - ushort triangles: 6 * triangles
                 - ushort triangle_strip: (triangles + 2) * 2 but how to fan
                   it will work but it's hard, maybe not worth it
-                  
-            now we use TRIANGLES elements for simplicity
+
         ###
-        # maxIntensity=5 means integer intensity is mapped from 0-255 -> 1.0-5.0
         direction = normRadian(pointInfo.dir)
         intensity = pointInfo.intensity or 1
         if intensity < 1
@@ -208,61 +186,34 @@ class LinerStitch
         dv.setUint8(6, stroke)
         dv.setUint8(7, Math.floor((intensity - 1) * 255 / (@maxIntensity - 1)))
         @pointBuffer.incr()
-        console.log("packed: #{x}, #{y}, #{Math.floor(direction * @directionLimit / PI_X_2)}, #{stroke}, #{Math.floor((intensity - 1) * 255 / (@maxIntensity - 1))}")
+        # console.log("packed: #{x}, #{y}, #{Math.floor(direction * @directionLimit / PI_X_2)}, #{stroke}, #{Math.floor((intensity - 1) * 255 / (@maxIntensity - 1))}")
 
     addLine: (line, stroke, lineCap='butt', lineJoin='miter') ->
-        if line.length < 2
+        stitches = @stitchLine(line, lineCap, lineJoin)
+        if not stitches
             return false
-        results = []
 
-        [dir0, result] = @_open(lineCap, line[0], line[1])
-        results.push(result)
-        for i in [1...line.length-1]
-            [dir0, result] = @_join(lineJoin, dir0, line[i], line[i + 1])
-            results.push(result)
-        result = @_close(lineCap, dir0)
-        results.push(result)
+        {vertices, elements} = stitches
 
         elementOffset = @pointBuffer.itemCnt
-        lineElementCnt = ((result.line0.length + result.line1.length) for result in results).reduce (x, y) -> x + y
-        if @elements.length + lineElementCnt + 2 > 65535
+        if elementOffset + vertices.length > 65535
             console.log('element buffer overflow')
             return true
 
         # connect with the last line strip
         if @elements.length > 0
             @elements.push(@elements[@elements.length - 1])
-            @elements.push(results[0].line0[0] + elementOffset)
+            @elements.push(elements[0] + elementOffset)
 
-        inLineOffset = 0
-        for result, i in results
-            line1 = result.line1
-            for index0, j in result.line0
-                index1 = line1[j]
-                @elements.push(index0 + elementOffset + inLineOffset)
-                @elements.push(index1 + elementOffset + inLineOffset)
-            inLineOffset += results[i].points.length
+        for element in elements
+            @elements.push(element + elementOffset)
 
-        for result, i in results
-            [x, y] = line[i]
-            for pointInfo in result.points
-                #console.log("@packVertex(x, y, pointInfo, stroke): #{x}, #{y}, #{JSON.stringify pointInfo}, #{stroke}")
-                @packVertex(x, y, pointInfo, stroke)
+        for vertex in vertices
+            [x, y] = vertex
+            #console.log("@packVertex(x, y, pointInfo, stroke): #{x}, #{y}, #{JSON.stringify pointInfo}, #{stroke}")
+            @packVertex(x, y, vertex, stroke)
+
         return false
-
-    _open: (lineCap, p0, p1) ->
-        # return dir0, result
-        dir0 = p2pAngle(p0, p1)
-        return [dir0, @capStitches[lineCap].open(dir0)]
-
-    _close: (lineCap, dir0) ->
-        # return result
-        return @capStitches[lineCap].close(dir0)
-
-    _join: (lineJoin, dir0, p1, p2) ->
-        # return dir1, result
-        dir1 = p2pAngle(p1, p2)
-        return [dir1, @joinStitches[lineJoin].join(dir0, dir1)]
 
 
 module.exports = LineSymbolizer

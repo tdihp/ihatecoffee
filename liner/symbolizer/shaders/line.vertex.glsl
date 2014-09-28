@@ -16,7 +16,7 @@ varying vec4 v_color;
 
 void main() {
     // normalize intensity
-    float intensity = (a_intensity / 255.0) * INTENSITY_MULTIPLY + 1.0;
+    float intensity = a_intensity * INTENSITY_MULTIPLY + 1.0;
 
     // normalize direction
     float direction = a_direction * DIRECTION_RAD;
