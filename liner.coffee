@@ -30,39 +30,33 @@ liner.createPainter = (gl) ->
     palette[5] = darken(palette[4], 0.6)
     widths[5] = 4
 
-    palette[6] = rgb2f(72, 68, 82)
-    widths[6] = 2
+    palette[6] = rgb2f(200, 200, 200)
+    widths[6] = 1
 
-    palette[7] = rgb2f(255, 128, 128)
-    widths[7] = 20
+    palette[7] = darken(palette[6], 0.2)
+    widths[7] = 1.5
 
     painter.symbolizers.line.updateStyle('default',
         {palette, widths}
     )
 
-    points = [[100, 100], [300, 100], [250, 300], [400, 300], [600, 200], [700, 250]]
-    
-    #painter.feed({type: 'line', line: points, stroke: 7})
-    #painter.addLine(points, 2)
-    #painter.addLine(points, 0, 'butt', 'bevel')
-    #painter.addLine(points, 0, 'square', 'miter')
-    #painter.addLine(points, 1, 'round', 'miter')
-    #painter.addLine(points, 1, 'round', 'round')
+    # dash style
+    dashes = ([i*8, i*4] for i in [1..8])
+    widths = (i * 2 for i in [1..8])
+    palette = ([i/8, i/8, i/8, 1] for i in [1..8])
+    palette[0] = [0.2, 0.2, 0.2, 1]
+    widths[0] = 1
+    dashes[0] = [5, 5]
+    painter.symbolizers.dashline.updateStyle('default',
+        {palette, widths, dashes}
+    )
 
-    #painter.updateBuffer()
+    points = [[100, 100], [300, 100], [250, 300]]#, [400, 300], [600, 200], [700, 250]]
+    
+    #painter.feed({type: 'dashline', line: points, stroke: 0, lineJoin: 'bevel'})
     return painter
 
 
 liner.addLines = (painter, lines)->
     for line in lines
-        #style = line.style
         painter.feed(line)
-    #points = [[100, 100], [300, 100], [250, 300], [400, 300], [600, 200], [700, 250]]
-    #points = [[100, 100], [300, 100]]
-    #painter.addLine(points, 7)
-    #painter.addLine(points, 7, 'butt', 'bevel')
-    #painter.addLine(points, 0, 'square', 'miter')
-    #painter.addLine(points, 7, 'square', 'bevel')
-    #painter.addLine(points, 7, 'round', 'round')
-
-    #painter.updateBuffer()

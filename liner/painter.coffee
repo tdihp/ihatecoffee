@@ -1,4 +1,4 @@
-{LineSymbolizer} = require './symbolizer/exports.coffee'
+{LineSymbolizer, DashlineSymbolizer} = require './symbolizer/exports.coffee'
 
 
 class Painter
@@ -19,7 +19,7 @@ class Painter
         ###
         @symbolizers =
             line: new LineSymbolizer(@gl)
-            #dashline: new DashLineSymbolizer()
+            dashline: new DashlineSymbolizer(@gl)
 
         @clear()
 
@@ -29,7 +29,7 @@ class Painter
             NOTE: we STRICTLY preserve draw order, and it's painter's job to
             do so
         ###
-        console.log "feeding symbol #{JSON.stringify symbol}"
+        # console.log "feeding symbol #{JSON.stringify symbol}"
         symbolizerName = symbol.type or 'line'
         styleName = symbol.style or 'default'
         symbolizer = @symbolizers[symbolizerName]
@@ -54,12 +54,22 @@ class Painter
         ###
             draw all that's 
         ###
+        gl.clearColor(0.8, 0.8, 0.8, 1)
+        gl.clearDepth(1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+        gl.disable(gl.DEPTH_TEST)
+
         symbolizerName = null
         for config in @drawSequence
             if config.symbolizerName != symbolizerName
                 if symbolizerName
                     @symbolizers[symbolizerName].exit()
                 symbolizerName = config.symbolizerName
+                # console.log "using symbolizer #{symbolizerName}"
                 @symbolizers[symbolizerName].enter(context)
 
             @symbolizers[symbolizerName].draw(config.slotID, config.styleName)

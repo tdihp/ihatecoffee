@@ -22,9 +22,11 @@ def to_screen(features, l, b, r, t, width, height):
     for _, features in features_by_layers:
         inner = []
         casing = []
+        dash = []
         for feature in features:
             inner_style = {'type': 'line', 'lineJoin': 'round', 'lineCap': 'round'}
             casing_style = {'type': 'line', 'lineJoin': 'round'}
+            dash_style = {'type': 'dashline'}
             geom = feature['geometry']
             coords = list(map(int, ((x - l) * tx, (y - b) * ty)) for x, y in geom['coordinates'])
             # filter coords
@@ -47,12 +49,15 @@ def to_screen(features, l, b, r, t, width, height):
                 casing.append(dict(line=coords, stroke=3, **casing_style))
             elif klass == 'railway':
                 # use dash symbolizer
-                inner.append(dict(line=coords, stroke=6))
+                inner.append(dict(line=coords, stroke=6, **inner_style))
+                casing.append(dict(line=coords, stroke=7, **casing_style))
+                dash.append(dict(line=coords, stroke=0, **dash_style))
             else:
                 inner.append(dict(line=coords, stroke=4, **inner_style))
                 casing.append(dict(line=coords, stroke=5, **casing_style))
         lines.extend(casing)
         lines.extend(inner)
+        lines.extend(dash)
     return lines
 
 

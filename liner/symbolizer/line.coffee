@@ -4,7 +4,7 @@ util = require '../util'
 {CapStitchRound, CapStitchButt, CapStitchSquare,
  JoinStitchMiter, JoinStitchRound, JoinStitchBevel,
  Stitcher} = require '../stitch'
-{PI_X_2, p2pAngle, vecAngle, normRadian, EasyBuffer, initProgram} = util
+{PI_X_2, normRadian, EasyBuffer, initProgram} = util
 
 fs = require 'fs'
 
@@ -23,7 +23,6 @@ class LineSymbolizer extends Symbolizer
         #define INTENSITY_MULTIPLY float(#{(@maxIntensity - 1.0)})
         #{fs.readFileSync(__dirname + '/shaders/line.vertex.glsl', 'utf8')}
         """
-        #vertexShader = fs.readFileSync(__dirname + '/shaders/line.vertex.glsl', 'utf8')
         fragmentShader = fs.readFileSync(__dirname + '/shaders/line.fragment.glsl', 'utf8')
         program = initProgram(gl, vertexShader, fragmentShader)
         @program = program
@@ -43,8 +42,7 @@ class LineSymbolizer extends Symbolizer
         # setup program
         gl = @gl
         gl.useProgram(@program)
-        #gl.disable(gl.BLEND)
-        gl.disable(gl.DEPTH_TEST)
+
         # set resolution from context
         {width, height} = context.resolution
         gl.uniform2f(@u_resolution, width, height)
@@ -54,14 +52,8 @@ class LineSymbolizer extends Symbolizer
 
     doDraw: (bucket) ->
         gl = @gl
-        
-        gl.clearColor(0.8, 0.8, 0.8, 1)
-        gl.clearDepth(1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        
         bucket.bindIt()
         #console.log "LineSymbolizer drawing #{bucket.size()}"
-
         gl.drawElements(gl.TRIANGLE_STRIP, bucket.size(), gl.UNSIGNED_SHORT, 0)
 
     newBucket: () ->
@@ -96,7 +88,7 @@ class LineStyle
 class LineBucket
     constructor: (@symbolizer) ->
         @dirty=true
-        @stitcher = new LinerStitch(@symbolizer.edges,
+        @stitcher = new LineStitcher(@symbolizer.edges,
                                     @symbolizer.maxIntensity,
                                     @symbolizer.directionLimit
                                     )
@@ -146,7 +138,7 @@ class LineBucket
         return @stitcher.elements.length
 
 
-class LinerStitch extends Stitcher
+class LineStitcher extends Stitcher
     constructor: (@edges, @maxIntensity, @directionLimit)->
         @pointBuffer = new EasyBuffer(8)
         @elements = []
