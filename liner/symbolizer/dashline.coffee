@@ -85,20 +85,24 @@ class DashlineSymbolizer extends Symbolizer
         gl.uniform1i(@u_sampler, 0)
 
 
-makedash = (dasharray, buffer, texWidth=256) ->
-    """return dashCycle and pixels"""
+makedash = (dasharray, buffer, texWidth=256, aaWidth=1) ->
+    ###return dashCycle and pixels
+    aaWidth in pixel for antialias
+    ###
     if dasharray.length != 2
         throw "invalid dasharray #{dasharray}"
 
     dashCycle = dasharray.reduce (t, s)-> t + s
 
-    dashLength = Math.round(dasharray[0] / dashCycle * texWidth)
-    gapLength = Math.round(dasharray[1] / dashCycle * texWidth)
+    [dashPix, gapPix] = dasharray
+    dashPix -= aaWidth
+    gapPix -= aaWidth
 
-    console.log "dash: #{dashLength}, gap: #{gapLength}"
+    dashLength = Math.round(dashPix / dashCycle * texWidth)
+    blendLength = Math.round(aaWidth / dashCycle * texWidth)
+    gapLength = texWidth - dashLength - (blendLength * 2)
 
-    if dashLength + gapLength != texWidth
-        throw "oops, length calculation failed"
+    blendStep = 255 / (blendLength + 2)
 
     i = 0
     for j in [0...dashLength]
@@ -106,12 +110,30 @@ makedash = (dasharray, buffer, texWidth=256) ->
         buffer[i++] = 255
         buffer[i++] = 255
         buffer[i++] = 255
+    
+    # blendout
+    alpha = 255 - blendStep
+    for j in [0...blendLength]
+        buffer[i++] = 255
+        buffer[i++] = 255
+        buffer[i++] = 255
+        buffer[i++] = Math.round(alpha)
+        alpha -= blendStep
 
     for j in [0...gapLength]
+        buffer[i++] = 255
+        buffer[i++] = 255
+        buffer[i++] = 255
         buffer[i++] = 0
-        buffer[i++] = 0
-        buffer[i++] = 0
-        buffer[i++] = 0
+
+    # blend in
+    alpha = blendStep
+    for j in [0...gapLength]
+        buffer[i++] = 255
+        buffer[i++] = 255
+        buffer[i++] = 255
+        buffer[i++] = Math.round(alpha)
+        alpha += blendStep
 
     return dashCycle
 

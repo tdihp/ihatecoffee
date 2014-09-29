@@ -30,11 +30,12 @@ liner.createPainter = (gl) ->
     palette[5] = darken(palette[4], 0.6)
     widths[5] = 4
 
-    palette[6] = rgb2f(200, 200, 200)
-    widths[6] = 1
+    palette[6] = darken(rgb2f(200, 200, 200), 0.2)
+    widths[6] = 0.5
 
-    palette[7] = darken(palette[6], 0.2)
-    widths[7] = 1.5
+    #palette[7] = darken(palette[6], 0.2)
+    palette[7] = [0,0,0,0]
+    widths[7] = 0
 
     painter.symbolizers.line.updateStyle('default',
         {palette, widths}
@@ -44,9 +45,9 @@ liner.createPainter = (gl) ->
     dashes = ([i*8, i*4] for i in [1..8])
     widths = (i * 2 for i in [1..8])
     palette = ([i/8, i/8, i/8, 1] for i in [1..8])
-    palette[0] = [0.2, 0.2, 0.2, 1]
-    widths[0] = 1
-    dashes[0] = [5, 5]
+    palette[0] = [0.4, 0.4, 0.4, 1]
+    widths[0] = 4
+    dashes[0] = [1.5, 8]
     painter.symbolizers.dashline.updateStyle('default',
         {palette, widths, dashes}
     )
