@@ -20,9 +20,9 @@ class JoinStitch
         ###
         throw 'not implemented!'
 
-
 class CapStitchRound extends CapStitch
     constructor: (@edges)-> super()
+
 
     open: (dir0) ->
         beginAngle = dir0 + Math.PI / 2
@@ -32,7 +32,7 @@ class CapStitchRound extends CapStitch
         points[0].side = 1
         line0 = [1...points.length]
         line1 = (0 for i in line0)
-        return {points: points, line0: line0, line1: line1}
+        return {points, line0, line1}
 
     close: (dir0) ->
         beginAngle = dir0 - Math.PI / 2
@@ -42,7 +42,7 @@ class CapStitchRound extends CapStitch
         points[0].side = 0
         line1 = [1...points.length].reverse()
         line0 = (0 for i in line1)
-        return {points: points, line0: line0, line1: line1}
+        return {points, line0, line1}
 
 
 class CapStitchButt extends CapStitch
@@ -52,7 +52,7 @@ class CapStitchButt extends CapStitch
         points = [{dir: beginAngle, side: 1}, {dir: endAngle, side: 0}]
         line0 = [1]
         line1 = [0]
-        return {points: points, line0: line0, line1: line1}
+        return {points, line0, line1}
 
     close: (dir0) ->
         beginAngle = dir0 - Math.PI / 2
@@ -60,7 +60,7 @@ class CapStitchButt extends CapStitch
         points = [{dir: beginAngle, side: 0}, {dir: endAngle, side: 1}]
         line0 = [0]
         line1 = [1]
-        return {points: points, line0: line0, line1: line1}
+        return {points, line0, line1}
 
 
 class CapStitchSquare extends CapStitch
@@ -70,7 +70,7 @@ class CapStitchSquare extends CapStitch
         points = [{dir: beginAngle, side: 1, intensity: Math.sqrt(2)}, {dir: endAngle, side: 0, intensity: Math.sqrt(2)}]
         line0 = [1]
         line1 = [0]
-        return {points: points, line0: line0, line1: line1}
+        return {points, line0, line1}
 
     close: (dir0) ->
         beginAngle = dir0 - Math.PI * 1 / 4
@@ -78,7 +78,7 @@ class CapStitchSquare extends CapStitch
         points = [{dir: beginAngle, side: 0, intensity: Math.sqrt(2)}, {dir: endAngle, side: 1, intensity: Math.sqrt(2)}]
         line0 = [0]
         line1 = [1]
-        return {points: points, line0: line0, line1: line1}
+        return {points, line0, line1}
 
 
 class JoinStitchHelper extends JoinStitch

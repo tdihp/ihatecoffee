@@ -86,60 +86,23 @@ class EasyBuffer
         @offset += @bytes
 
 
-createShader = (gl, src, type) ->
-	shader = gl.createShader(type)
-
-	gl.shaderSource(shader, src)
-	gl.compileShader(shader)
-
-	if !gl.getShaderParameter(shader, gl.COMPILE_STATUS)
-        t = if type == gl.VERTEX_SHADER then "VERTEX" else "FRAGMENT"
-        alert("#{t} SHADER: #{gl.getShaderInfoLog(shader)}")
-        return null
-
-	return shader
-
-initProgram = (gl, vertexShader, fragmentShader) ->
-    program = gl.createProgram()
-    vs = createShader(gl, vertexShader, gl.VERTEX_SHADER)
-    fs = createShader(gl, fragmentShader, gl.FRAGMENT_SHADER)
-    
-    if vs == null or fs == null
-        alert 'oops, initProgram failed'
-        return null
-    
-    gl.attachShader(program, vs)
-    gl.attachShader(program, fs)
-    gl.deleteShader(vs)
-    gl.deleteShader(fs)
-    gl.linkProgram(program)
-    
-    if !gl.getProgramParameter(program, gl.LINK_STATUS)
-        alert """
-link error: 
-    VALIDATE_STATUS: #{ gl.getProgramParameter(program, gl.VALIDATE_STATUS) }
-    ERROR: #{gl.getError()}"""
-        return null
-    return program
-
-
-rgb2f = (r,g,b,a=0) ->
+rgb2f = ([r,g,b,a]) ->
+    a = a? or 0
     return [r / 255, g / 255, b / 255, 1 - (a / 255)]
 
 
 darken = ([r, g, b, a], ratio) ->
+    a = a? or 0
     return [r * ratio, g * ratio, b * ratio, a]
 
 
 module.exports =
-    PI_X_2: PI_X_2
-    p2pAngle: p2pAngle
-    vecAngle: vecAngle
-    pacman: pacman
-    normRadian: normRadian
-    angleDiff: angleDiff
-    EasyBuffer: EasyBuffer
-    createShader: createShader
-    initProgram: initProgram
-    rgb2f: rgb2f
-    darken: darken
+    PI_X_2
+    p2pAngle
+    vecAngle
+    pacman
+    normRadian
+    angleDiff
+    EasyBuffer
+    rgb2f
+    darken

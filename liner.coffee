@@ -10,7 +10,7 @@ liner.createPainter = (gl) ->
     painter = new Painter(gl)
     palette = []
     widths = []
-    
+
     # update style
     palette[0] = rgb2f(248, 242, 218)
     widths[0] = 5

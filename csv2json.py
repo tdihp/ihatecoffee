@@ -16,10 +16,13 @@ def to_screen(features, l, b, r, t, width, height):
     "as {styles, coords} list"
     tx = width / (r - l)
     ty = height / (t - b)
-    features_by_layers = sorted((k, list(g)) for k, g in itertools.groupby(features, lambda x: x['properties']['layer']))
+    features_by_layers = sorted((k, list(g)) for k, g in\
+        itertools.groupby(features,
+            lambda x: (int(x['properties']['layer']), int(x['properties']['is_tunnel']))))
     #features_by_layers.reverse()
     lines = []
-    for _, features in features_by_layers:
+    tunnels = []
+    for (layer, is_tunnel), features in features_by_layers:
         inner = []
         casing = []
         dash = []
@@ -55,10 +58,15 @@ def to_screen(features, l, b, r, t, width, height):
             else:
                 inner.append(dict(line=coords, stroke=4, **inner_style))
                 casing.append(dict(line=coords, stroke=5, **casing_style))
-        lines.extend(casing)
-        lines.extend(inner)
-        lines.extend(dash)
-    return lines
+        if is_tunnel:
+            tunnels.extend(casing)
+            tunnels.extend(inner)
+            tunnels.extend(dash)
+        else:
+            lines.extend(casing)
+            lines.extend(inner)
+            lines.extend(dash)
+    return tunnels + lines
 
 
 def packjson(fname, out, screen):
