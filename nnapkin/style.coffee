@@ -1,1 +1,1 @@
-
+# style is just a {rule, symbolizer}
