@@ -18,7 +18,7 @@ class Assembler
         @currentVertices = []
         @currentElements = null
 
-    feed: (geometry, renderArgs, offset=[0, 0]) ->
+    feed: (geometry, depth, renderArgs, offset=[0, 0]) ->
         result = @convert(geometry, renderArgs, offset)
         if result is null
             return

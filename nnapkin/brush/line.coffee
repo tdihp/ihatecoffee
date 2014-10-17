@@ -38,7 +38,7 @@ class LineConverter extends Stitcher
             round: new JoinStitchRound(@edges)
             bevel: new JoinStitchBevel()
 
-    func: (geometry, renderArgs, offset) =>
+    func: (geometry, depth, renderArgs, offset) =>
         # XXX: make edges adaptable for each geom, with renderArgs
         line = shiftLine(geometry, offset)
         makeLineSofar(line)
@@ -46,7 +46,7 @@ class LineConverter extends Stitcher
         if stitches is null
             return null
         {vertices, elements} = stitches
-        {paletteIndex, depth} = renderArgs
+        {paletteIndex} = renderArgs
         vertices.map (v) ->
             v.paletteIndex = paletteIndex
             v.depth = depth
